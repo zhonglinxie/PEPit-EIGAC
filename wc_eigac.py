@@ -105,7 +105,7 @@ def wc_accelerated_gradient_convex(mu, L, n, wrapper="cvxpy", solver=None, verbo
     return pepit_tau, theoretical_tau
 
 
-def wc_eigac_convex_modified(L, n, alpha=4.1, t0=1.0, wrapper="cvxpy", solver=None, verbose=1):
+def wc_eigac_convex_modified(L, n, alpha=3.0, t0=1.0, wrapper="cvxpy", solver=None, verbose=1):
     from PEPit import PEP
     from PEPit.functions import SmoothConvexFunction
 
@@ -125,7 +125,8 @@ def wc_eigac_convex_modified(L, n, alpha=4.1, t0=1.0, wrapper="cvxpy", solver=No
 
     # Initial conditions
     x0 = problem.set_initial_point()
-    v0 = 2.0 / h /L * func.gradient(x0)
+    v0 = 2.5/ h /L * func.gradient(x0)
+    # v0 = x0 - x0
     problem.set_initial_condition((x0 - xs) ** 2 <= 1)
 
     # Initialize
@@ -134,7 +135,7 @@ def wc_eigac_convex_modified(L, n, alpha=4.1, t0=1.0, wrapper="cvxpy", solver=No
 
     for k in range(n):
         t_k = t0 + k * h
-        beta_k = 2.0/h/L
+        beta_k = 2.5/h/L
         dbeta_k = alpha / t_k ** 2  # derivative of beta(t)
         gamma_k = 1 + alpha * beta_k / t_k
 
@@ -152,7 +153,7 @@ def wc_eigac_convex_modified(L, n, alpha=4.1, t0=1.0, wrapper="cvxpy", solver=No
         v_k = v_k1
 
     # Set the performance metric
-    problem.set_performance_metric(func(x_k) - fs)
+    problem.set_performance_metric(func(x_k + h * (v_k - beta_k * func.gradient(x_k))) - fs)
 
     # Solve the PEP
     pepit_tau = problem.solve(wrapper=wrapper, solver=solver, verbose=max(verbose, 0))
@@ -178,7 +179,7 @@ if __name__ == "__main__":
   from PEPit.examples.unconstrained_convex_minimization import wc_gradient_descent
 
   # Set the parameters
-  L = 4          # smoothness parameter
+  L = 10          # smoothness parameter
   mu = 0       # strong convexity parameter
   gamma = 1 / L  # step-size
 
@@ -198,8 +199,8 @@ if __name__ == "__main__":
           cached_results = {}
 
   # Set a list of iteration counter to test
-  n_list = np.array([1, 2, 4, 6, 8, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 150])
-  # , 200, 300, 400, 500, 750, 1000
+  n_list = np.array([1, 2, 4, 6, 8, 10, 20, 30, 40, 50, 80])
+  # , 60, 70, 80, 90, 100, 110, 120, 150, 200, 300, 400, 500, 750, 1000
   
   # 检查哪些n值需要计算
   n_to_compute = []
