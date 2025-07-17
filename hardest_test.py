@@ -358,7 +358,8 @@ def compare_methods(L: float, k: int, dim: int, learning_rate: float,
     plt.xscale('log')
     
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+    plt.savefig('convergence_curves.pdf')
     
     return results
 
@@ -379,14 +380,14 @@ def main():
     # Experiment 3: Large-scale problem
     print("\n" + "="*60)
     print("\nExperiment 3: Large-scale problem (k=800, dim=1601)")
-    results3 = compare_methods(L=1.0, k=2000, dim=4001, learning_rate=1.0, 
-                              methods=methods, max_iter=4000)
+    results3 = compare_methods(L=1.0, k=200, dim=401, learning_rate=1.0, 
+                              methods=methods, max_iter=400)
     
     # Verify theoretical optimal solution
     print("\n" + "="*60)
     print("\nTheoretical Verification:")
     
-    for k_val, L_val, dim_val in [(2000, 1.0, 4001)]:
+    for k_val, L_val, dim_val in [(200, 1.0, 401)]:
         func_test = QuadraticFunction(L=L_val, k=k_val, n=dim_val)
         x_opt, f_opt = func_test.theoretical_optimum()
         

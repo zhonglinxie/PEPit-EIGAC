@@ -9,4 +9,5 @@ dependencies = [
     "mosek>=11.0.22",
     "numpy>=2.3.0",
     "pepit>=0.3.2",
+    "scikit-learn>=1.7.0",
 ]

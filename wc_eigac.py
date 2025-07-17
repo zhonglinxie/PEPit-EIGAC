@@ -110,8 +110,9 @@ def wc_eigac_convex_modified(L, n, alpha=3.0, t0=1.0, wrapper="cvxpy", solver=No
     from PEPit.functions import SmoothConvexFunction
 
     # Step size
-    h = 1 / sqrt(L)
-    t0 = 10*h
+    s = 2/3*1/L
+    h = sqrt(s)
+    t0 = (alpha+12)*h
 
     # Instantiate PEP
     problem = PEP()
@@ -125,8 +126,8 @@ def wc_eigac_convex_modified(L, n, alpha=3.0, t0=1.0, wrapper="cvxpy", solver=No
 
     # Initial conditions
     x0 = problem.set_initial_point()
-    v0 = 2.5/ h /L * func.gradient(x0)
-    # v0 = x0 - x0
+    # v0 = 2.5/ h /L * func.gradient(x0)
+    v0 = x0 - x0
     problem.set_initial_condition((x0 - xs) ** 2 <= 1)
 
     # Initialize
@@ -135,7 +136,7 @@ def wc_eigac_convex_modified(L, n, alpha=3.0, t0=1.0, wrapper="cvxpy", solver=No
 
     for k in range(n):
         t_k = t0 + k * h
-        beta_k = 2.5/h/L
+        beta_k = 2.5*h
         dbeta_k = alpha / t_k ** 2  # derivative of beta(t)
         gamma_k = 1 + alpha * beta_k / t_k
 
@@ -167,7 +168,10 @@ def wc_eigac_convex_modified(L, n, alpha=3.0, t0=1.0, wrapper="cvxpy", solver=No
     # No known theoretical bound given, but we print the result
     if verbose != -1:
         print('*** Modified Euler Scheme (from paper) ***')
-        print('\tPEPit guarantee:\t f(x_n)-f_* <= {:.6} ||x_0 - x_*||^2'.format(pepit_tau))
+        if pepit_tau is not None:
+            print('\tPEPit guarantee:\t f(x_n)-f_* <= {:.6} ||x_0 - x_*||^2'.format(pepit_tau))
+        else:
+            print('\tPEPit guarantee:\t 问题无界 (unbounded)')
 
     return pepit_tau, theoretical_agd, theoretical_gd
 
@@ -179,7 +183,7 @@ if __name__ == "__main__":
   from PEPit.examples.unconstrained_convex_minimization import wc_gradient_descent
 
   # Set the parameters
-  L = 10          # smoothness parameter
+  L = 5          # smoothness parameter
   mu = 0       # strong convexity parameter
   gamma = 1 / L  # step-size
 
@@ -199,8 +203,8 @@ if __name__ == "__main__":
           cached_results = {}
 
   # Set a list of iteration counter to test
-  n_list = np.array([1, 2, 4, 6, 8, 10, 20, 30, 40, 50, 80])
-  # , 60, 70, 80, 90, 100, 110, 120, 150, 200, 300, 400, 500, 750, 1000
+  n_list = np.array([1, 2, 4, 6, 8, 10, 20, 30, 40, 50])
+  # , 80, 90, 120, 150, 60, 70, 80, 90, 100, 110, 120, 150, 200, 300, 400, 500, 750, 1000
   
   # 检查哪些n值需要计算
   n_to_compute = []
@@ -235,6 +239,7 @@ if __name__ == "__main__":
             'MSK_DPAR_INTPNT_CO_TOL_PFEAS': 1e-5,  # 可选：调整精度
             'MSK_DPAR_INTPNT_CO_TOL_DFEAS': 1e-5,
         })
+    #   pepit_tau_eigac, theoretical_agd, theoretical_gd = wc_eigac_convex_modified(L=L, n=n, verbose=1, wrapper="mosek")
       
       # 将结果存储到缓存中
       cached_results[n] = {
@@ -242,6 +247,10 @@ if __name__ == "__main__":
           'theoretical_agd': theoretical_agd,
           'theoretical_gd': theoretical_gd
       }
+      
+      # 如果PEPit结果为None，打印警告
+      if pepit_tau_eigac is None:
+          print(f"警告: n={n} 的PEPit求解失败，结果为None")
       
       # 每计算完一个结果就保存缓存（防止中途中断丢失结果）
       try:
@@ -255,7 +264,12 @@ if __name__ == "__main__":
   for n in n_list:
       if n in cached_results:
           result = cached_results[n]
-          pepit_taus_eigac.append(result['pepit_tau_eigac'])
+          # 检查pepit_tau_eigac是否为None
+          if result['pepit_tau_eigac'] is not None:
+              pepit_taus_eigac.append(result['pepit_tau_eigac'])
+          else:
+              print(f"警告: n={n} 的PEPit结果为None，跳过绘图")
+              continue
           theoretical_taus_agd.append(result['theoretical_agd'])
           theoretical_taus_gd.append(result['theoretical_gd'])
 
@@ -283,5 +297,5 @@ if __name__ == "__main__":
   plt.ylabel('Worst-case guarantee')
   plt.title('Worst-case performance of Optimization Methods')
   plt.grid(True)
-  plt.savefig('wc_eigac.pdf')
-  plt.show()
+  plt.savefig(f"eigac_cache_L{L}_mu{mu}.pdf")
+#   plt.show()

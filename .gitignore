@@ -11,3 +11,5 @@ wheels/
 
 *.pdf
 *.png
+
+.vscode/
